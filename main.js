@@ -194,7 +194,7 @@ const predictFromDatasets = (historicDatasets, observedData) => {
 // TODO: Prepare the tests
 const main = async() => {
     const rawData2018 = await readCsvToJsonLines('./data/train/prez-2018.csv');
-    const rawData2023 = await readCsvToJsonLines('./data/train/prez-2023.csv');
+    const rawData2023 = await readCsvToJsonLines('./data/test/prez-2023.csv');
 
     const firstRound2018 = rawData2018.filter(row => row.CHYBA === 0 && row.KOLO === 1).map((line) => transformUnit(line, (line) => [
         line.HLASY_01,
@@ -229,8 +229,8 @@ const main = async() => {
 
     const fullNewData = firstRound2023;
 
-    // We take 5% of the historic data as the current data, so we can test it
-    const observedData = fullNewData.slice(100, 1000); // pickItemsWithChance(fullNewData, 0.01);
+    // We take same of the new data as observation (seemed to work well with random picking)
+    const observedData = fullNewData.slice(100, 1000);
 
     console.log(`Predicting from ${observedData.length} ( ${Math.floor(observedData.length * 100 / fullNewData.length)}%) units:`);
     const prediction = predictFromDatasets([
