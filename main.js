@@ -247,6 +247,10 @@ const main = async() => {
 
 };
 
+// TODO:
+// - download and unzip fresh data from volby.cz/opendata/opendata
+// - run the prediction
+// - send the prediction results to dataset
 (async () => {
     await main();
 })();
