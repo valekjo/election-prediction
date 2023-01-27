@@ -4,10 +4,6 @@ const util = require('util');
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
 
-const writeJson = async (filename, data) => {
-    await writeFile(filename, JSON.stringify(data, null, 2));
-}
-
 const readCsvToJsonLines = async (filename) => {
     const data = await readFile(filename, 'utf-8');
     const lines = data.split('\n').map(line => line.trim());
@@ -53,61 +49,55 @@ const transformUnit = (line, getVotes) => {
     return unit;
 }
 
-// The most important function - distance of 2 units. The lower the distance, the more are the results likely to be similar
-const getDistance = (unitA, unitB) => {
+const getVotesRatioError = (unitA, unitB) => {
     // First try mean square error of votesRatio
+    let error = 0;
     // Number of items is the same in both units
-    let distance = 0;
     const numItems = unitA.votesRatio.length;
 
     for(let i = 0; i < numItems; i++) {
-        distance += (unitA.votesRatio[i] * 100 - unitB.votesRatio[i] * 100) ** 2
+        error += (unitA.votesRatio[i] - unitB.votesRatio[i]) ** 2
     }
-    return distance / numItems;
+    return error / numItems;
 }
 
 // Get most similar unit from reference units
-const getBestMatchByDistance = (unit, referenceUnits) => {
-    const unitsWithDistances = referenceUnits.map((u => ({
+const getBestMatchByErrorSize = (unit, referenceUnits) => {
+   return referenceUnits.map((u => ({
             unit: u, 
-            distance: getDistance(unit, u)
+            error: getVotesRatioError(unit, u)
         })))
-        .sort((a, b) => a.distance - b.distance);
-    const matchedUnit = unitsWithDistances[0].unit;
-    return matchedUnit;
+        .sort((a, b) => a.error - b.error)
+        [0].unit;
 }
 
-// This is the most important function
+/**
+ * Get the most similar unit from reference units.
+ * 
+ * The most important part of prediction, with most important assumptions, that people tend to vote the same
+ * in places that are close to each other and of the same size.
+ * 
+ */
 const getBestMatch = (unit, referenceUnits) => {
-    const preferences = [
-        { 
-            name: 'Stejna velikost, stejna obec',
-            filter: ({sizeClass, l2}) => unit.l2 === l2 && sizeClass === unit.sizeClass
-        },
-        {
-            name: 'Stejna velikost, stejny okres',
-            filter: ({sizeClass, l1}) => unit.l1 === l1 && sizeClass === unit.sizeClass
-        },
-        {
-            name: 'Stejna obec',
-            filter: ({l2}) => unit.l2 === l2,
-        },
-        {
-            name: 'Stejny okres',
-            filter: ({l1}) => unit.l1 === l1,
-        },
-        {
-            name: 'Stejna velikost',
-            filter: ({sizeClass}) => unit.sizeClass === sizeClass,
-        }
+    const preferenceFilters = [
+        // Stejna velikost, stejna obec
+        ({sizeClass, l2}) => unit.l2 === l2 && sizeClass === unit.sizeClass,
+        // Stejna velikost, stejny okres
+        ({sizeClass, l1}) => unit.l1 === l1 && sizeClass === unit.sizeClass,
+        // Stejna obec
+        ({l2}) => unit.l2 === l2,
+        // Stejny okres
+        ({l1}) => unit.l1 === l1,
+        // Stejna velikost
+        ({sizeClass}) => unit.sizeClass === sizeClass
     ];
-    for(const preference of preferences) {
-        const matchedUnits = referenceUnits.filter(preference.filter);
+    for(const filter of preferenceFilters) {
+        const matchedUnits = referenceUnits.filter(filter);
         if (matchedUnits.length > 0) {
-            return getBestMatchByDistance(unit, matchedUnits);
+            return getBestMatchByErrorSize(unit, matchedUnits);
         }
     }
-    return getBestMatchByDistance(unit, referenceUnits);
+    return getBestMatchByErrorSize(unit, referenceUnits);
 }
 
 // Project result of given unit
@@ -117,11 +107,8 @@ const predictUnitFromReference = (unit, referenceUnit) => {
     const totalVotes = (referenceUnit.totalVotes * unit.totalVoters / referenceUnit.totalVoters);
     // The ratio of votes is projected to be the same as in the reference unit
     const votesRatio = referenceUnit.votesRatio.map(x => x);
-
     // Votes are respective portion of total votes
     const votes = votesRatio.map(x => x * totalVotes);
-    
-
     return {
         id: unit.id,
         referenceUnitId: referenceUnit.id,
@@ -200,15 +187,8 @@ const combinePredictions = (predictions) => {
 
 const predictFromDatasets = (historicDatasets, observedData) => {
     const predictions = historicDatasets.map((dataset) => predictFromDataset(dataset, observedData));
-
-
     const prediction = combinePredictions(predictions);
-
-    console.log('Individual predictions');
-    printSeparator();
-    predictions.forEach(printNicely);
-    printSeparator();
-    printNicely(prediction);
+    return prediction;
 }
 
 // TODO: Prepare the tests
@@ -250,17 +230,20 @@ const main = async() => {
     const fullNewData = firstRound2023;
 
     // We take 5% of the historic data as the current data, so we can test it
-    const observedData = pickItemsWithChance(fullNewData, 0.01);
+    const observedData = fullNewData.slice(100, 1000); // pickItemsWithChance(fullNewData, 0.01);
 
     console.log(`Predicting from ${observedData.length} ( ${Math.floor(observedData.length * 100 / fullNewData.length)}%) units:`);
-    predictFromDatasets([
+    const prediction = predictFromDatasets([
         firstRound2018,
         secondRound2018,
     ], observedData);
 
+
+    console.log('                    ↓ ↓ ↓ Prediction ↓ ↓ ↓');
+    printNicely(prediction);
     printSeparator();
     printNicely(sumResults(fullNewData))
-    console.log('Real results ↑ ↑ ↑');
+    console.log('                   ↑ ↑ ↑ Real results ↑ ↑ ↑');
 
 };
 
