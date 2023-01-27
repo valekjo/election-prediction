@@ -54,30 +54,15 @@ const transformUnit = (line, getVotes) => {
 }
 
 // The most important function - distance of 2 units. The lower the distance, the more are the results likely to be similar
-// TODO: Maybe include some size penalty?
 const getDistance = (unitA, unitB) => {
     // First try mean square error of votesRatio
     // Number of items is the same in both units
     let distance = 0;
     const numItems = unitA.votesRatio.length;
 
-
     for(let i = 0; i < numItems; i++) {
         distance += (unitA.votesRatio[i] * 100 - unitB.votesRatio[i] * 100) ** 2
     }
-
-    if (unitB.id === '7105-536687-1' && unitA.id === '7105-570281-1') {
-        console.log('Fitted the unit', {
-            id: unitA.id,
-            numItems,
-            ni2: unitB.votesRatio.length,
-            distance,
-            votesRatioA: unitA.votesRatio,
-            votesRatioB: unitB.votesRatio,
-        });
-    }
-
-
     return distance / numItems;
 }
 
@@ -92,6 +77,7 @@ const getBestMatchByDistance = (unit, referenceUnits) => {
     return matchedUnit;
 }
 
+// This is the most important function
 const getBestMatch = (unit, referenceUnits) => {
     const preferences = [
         { 
@@ -125,9 +111,10 @@ const getBestMatch = (unit, referenceUnits) => {
 }
 
 // Project result of given unit
+// Unit is historic, referenceUnit is current
 const predictUnitFromReference = (unit, referenceUnit) => {
     // Project total votes based on attendance in reference unit - assume the same percentage
-    const totalVotes = (referenceUnit.totalVotes * unit.totalVoters/ referenceUnit.totalVoters);
+    const totalVotes = (referenceUnit.totalVotes * unit.totalVoters / referenceUnit.totalVoters);
     // The ratio of votes is projected to be the same as in the reference unit
     const votesRatio = referenceUnit.votesRatio.map(x => x);
 
@@ -173,25 +160,25 @@ const predictFromDataset = (historicData, partialCurrentData) => {
     const historicDataMap = mapById(historicData);
     const partialCurrentDataMap = mapById(partialCurrentData);
 
-    const partialHistoricData = historicData.filter((unit) => partialCurrentDataMap[unit.id]);
-    // console.log(partialHistoricData);
+    // Historic data on the units we have in current data
+    const partialHistoricData = historicData.filter((unit) => !!partialCurrentDataMap[unit.id]);
 
     // Ids of all units
     const unitIds = Object.keys(historicDataMap);
     const predictedData = unitIds.map((unitId) => {
         // If we already have data for the unit, just take it's value as prediction (it is what it is)
         if (partialCurrentDataMap[unitId]) return partialCurrentDataMap[unitId];
-        const unit = historicDataMap[unitId];
-        const referenceUnit = getBestMatch(unit, partialCurrentData);
-        // if (referenceUnit.id === '7105-536687-1') {
-        //     console.log(unit, referenceUnit);
-        // }
-        return predictUnitFromReference(unit, referenceUnit); 
+
+        // Otherwise we find the unit that best matched this unit historically
+        const unitInHistory = historicDataMap[unitId];
+        const referenceUnitInHistory = getBestMatch(unitInHistory, partialHistoricData);
+
+        // And from this best matching unit's current state, we predict the current state of unit
+        const referenceUnit = partialCurrentDataMap[referenceUnitInHistory.id];
+        return predictUnitFromReference(unitInHistory, referenceUnit); 
     });
 
-
-    // void writeJson(`${new Date().toISOString()}.json`, predictedData);
-
+    // And then we just sum results of individual units
     return sumResults(predictedData);
 }
 
@@ -201,11 +188,10 @@ const printNicely = (results) => {
     console.log(percentages);
 }
 
-const printSeparator = () => console.log('-------------------------------------------------------------');
+const printSeparator = () => console.log('------------------------------------------------------------------------');
 
 const pickItemsWithChance = (array, chance) => {
-    return array.filter((_, i) => i % 20 === 0);
-    // return array.filter(() => Math.random() < chance);
+    return array.filter(() => Math.random() < chance);
 }
 
 const combinePredictions = (predictions) => {
@@ -258,21 +244,19 @@ const main = async() => {
         line.HLASY_07,
         line.HLASY_08,
         line.HLASY_09,
-        0,
         line.VYD_OBALKY - line.PL_HL_CELK,
     ]));
 
     const fullNewData = firstRound2023;
 
     // We take 5% of the historic data as the current data, so we can test it
-    const observedData = pickItemsWithChance(fullNewData, 0.05);
+    const observedData = pickItemsWithChance(fullNewData, 0.01);
 
     console.log(`Predicting from ${observedData.length} ( ${Math.floor(observedData.length * 100 / fullNewData.length)}%) units:`);
     predictFromDatasets([
         firstRound2018,
-        // secondRound2018,
+        secondRound2018,
     ], observedData);
-
 
     printSeparator();
     printNicely(sumResults(fullNewData))
