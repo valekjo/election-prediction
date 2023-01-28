@@ -125,7 +125,7 @@ const main = async() => {
 
     // Get map of obec to okres
     const obecToOkresMap = getObecToOkresMap(historicDatasets.firstRound2018);
-    const {data, meta} = await loadAllAvailableData(1, 5, { obecToOkresMap, numCandidates: 9 });
+    const {data, meta} = await loadAllAvailableData(1, 10, { obecToOkresMap, numCandidates: 9 });
 
     const prediction = predictFromDatasets(
         [ historicDatasets.firstRound2018 ],

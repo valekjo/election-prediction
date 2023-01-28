@@ -63,14 +63,17 @@ export const meanSquareError = (a, b) => {
 const getBestMatchByErrorSize = (unit, referenceUnits) => {
    const bestMatch = referenceUnits.map((u => { 
         // Add size anducast
-        const error = meanSquareError(unit.votesRatio.map(x => x * 200), u.votesRatio.map(x => x * 200));
+        const votesError = meanSquareError(unit.votesRatio.map(x => x * 200), u.votesRatio.map(x => x * 200));
+        const attendanceA = unit.totalVotes / unit.totalVoters;
+        const attendanceB = u.totalVotes / u.totalVoters;
+        const attendanceError = Math.sqrt(( attendanceA * 200 - attendanceB * 200 ) ** 2)
+        // const attendanceError = 0;
         return {
             unit: u, 
-            error,
+            error: votesError + attendanceError,
         }; }))
         .sort((a, b) => a.error - b.error)
         [0];
-    console.log(bestMatch.error);
     return bestMatch.unit;
 }
 
