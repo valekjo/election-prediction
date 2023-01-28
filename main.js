@@ -25,7 +25,7 @@ const loadUrlCached = async (kolo, davka) => {
 
     }
     console.log('Downloading data', {kolo, davka});
-    const { body } = await got.get(url, {retry: {limit: 5}});
+    const { body } = await got.get(url, {retry: {limit: 3}});
     const $ = cheerio.load(body, { xmlMode: true});
     const chyba = $('CHYBA').attr('KOD_CHYBY');
 
@@ -98,10 +98,12 @@ const loadXMLBatch = async (kolo, davka, { obecToOkresMap, numCandidates }) => {
         });
     });
 
+    const firstRoundOkrsky = Math.floor(okrskyCelkem / 2);
+
     return { data, meta: {
-        okrskyCelkem,
-        okrzkyZprac,
-        percentage: okrzkyZprac / okrskyCelkem,
+        okrskyCelkem: okrskyCelkem - firstRoundOkrsky,
+        okrzkyZprac: okrzkyZprac - firstRoundOkrsky,
+        percentage: (okrzkyZprac - firstRoundOkrsky) / (okrskyCelkem - firstRoundOkrsky),
     } };
 }
 
@@ -124,16 +126,29 @@ const main = async() => {
     const historicDatasets = await loadHistoricDatasets();
 
     // Get map of obec to okres
-    const obecToOkresMap = getObecToOkresMap(historicDatasets.firstRound2018);
-    const {data, meta} = await loadAllAvailableData(1, 10, { obecToOkresMap, numCandidates: 9 });
+    const obecToOkresMap = getObecToOkresMap(historicDatasets.firstRound2023);
+    const {data, meta} = await loadAllAvailableData(2, 50, { obecToOkresMap, numCandidates: 9 });
+
+    if (data.length === 0) {
+        console.log('No results so far');
+        return
+    }
 
     const prediction = predictFromDatasets(
-        [ historicDatasets.firstRound2018 ],
+        [ historicDatasets.secondRound2018, historicDatasets.firstRound2023 ],
         data
     );
 
     console.log(meta);
     console.log(humanizePrediction(prediction, CANDIDATE_NAMES.FIRST_ROUND_2023));
+
+    console.log('----------------------------------------------------');
+
+
+    console.log('Zpracovano okrsku');
+    console.log(Math.floor(meta.percentage * 10000) / 100);
+    console.log('Odhad');
+    console.log(humanizePrediction(prediction, CANDIDATE_NAMES.FIRST_ROUND_2023).filter(x => ['Pavel', 'Babiš'].includes(x[0])));
 };
 
 // TODO:
