@@ -1,0 +1,24 @@
+{
+  "name": "election-prediction",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node main.js",
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/valekjo/election-prediction.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/valekjo/election-prediction/issues"
+  },
+  "homepage": "https://github.com/valekjo/election-prediction#readme"
+}
