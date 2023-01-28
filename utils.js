@@ -1,5 +1,6 @@
-const fs = require('fs');
-const util = require('util');
+import fs from 'fs';
+import util from 'util';
+
 
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
@@ -49,7 +50,7 @@ const transformUnit = (line, getVotes) => {
     return unit;
 }
 
-const meanSquareError = (a, b) => {
+export const meanSquareError = (a, b) => {
     let error = 0;
     for (let i = 0; i < a.length; i++) {
         error += (a[i] - b[i]) ** 2
@@ -115,7 +116,7 @@ const predictUnitFromReference = (unit, referenceUnit) => {
     }
 }
 
-const sumResults = (units) => {
+export const sumResults = (units) => {
     const emptyVotes = units[0].votes.map(x => 0);
     const results = {
         totalVoters: 0,
@@ -169,13 +170,13 @@ const combinePredictions = (predictions) => {
     return sumResults(predictions);
 }
 
-const predictFromDatasets = (historicDatasets, observedData) => {
+export const predictFromDatasets = (historicDatasets, observedData) => {
     const predictions = historicDatasets.map((dataset) => predictFromDataset(dataset, observedData));
     const prediction = combinePredictions(predictions);
     return prediction;
 }
 
-const loadHistoricDatasets = async () => {
+export const loadHistoricDatasets = async () => {
     const rawData2018 = await readCsvToJsonLines('./data/prez-2018.csv');
     const rawData2023 = await readCsvToJsonLines('./data/prez-2023.csv');
 
@@ -217,7 +218,7 @@ const loadHistoricDatasets = async () => {
     };
 }
 
-const CANDIDATE_NAMES = {
+export const CANDIDATE_NAMES = {
     SECOND_ROUND_2018: [
         'Zeman',
         'Drahoš',
@@ -237,20 +238,10 @@ const CANDIDATE_NAMES = {
     ]
 }
 
-const humanizePrediction = (prediction, names) => {
+export const humanizePrediction = (prediction, names) => {
     const result = [];
     for (let i = 0; i < prediction.votesRatio.length; i++) {
         result.push([names[i], prediction.votesRatio[i]]);
     }
     return result.sort((a, b) => b[1] - a[1]);
-}
-
-
-module.exports = {
-    loadHistoricDatasets,
-    humanizePrediction,
-    predictFromDatasets,
-    sumResults,
-    meanSquareError,
-    CANDIDATE_NAMES,
 }

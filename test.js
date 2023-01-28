@@ -1,14 +1,12 @@
-
-
-const _ = require('lodash');
-const {
+import _ from 'lodash';
+import {
     predictFromDatasets,
     sumResults,
     meanSquareError,
     humanizePrediction,
     loadHistoricDatasets,
     CANDIDATE_NAMES,
-} = require('./utils.js');
+} from './utils.js';
 
 const test = async (historicDatasets, currentData, sampleSize, { candidateNames }) => {
     // Take part of the data as observation

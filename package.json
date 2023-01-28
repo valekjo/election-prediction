@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
+  "type": "module",
   "dependencies": {
+    "got": "^12.5.3",
     "lodash": "^4.17.21"
   },
   "devDependencies": {},
