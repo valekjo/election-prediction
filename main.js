@@ -78,7 +78,7 @@ const loadXMLBatch = async (kolo, davka, { obecToOkresMap, numCandidates }) => {
             votes.push(votesRaw[candidate] || 0);
         }
         // // Add invalid votes
-        // votes.push(totalVotes - validVotes);
+        votes.push(totalVotes - validVotes);
 
         const l3 = parseInt($okrsek.attr('CIS_OKRSEK'));
         const l2 = parseInt($okrsek.attr('CIS_OBEC'));
@@ -149,7 +149,7 @@ const main = async() => {
     console.log(Math.floor((prediction.totalVotes / prediction.totalVoters) * 10000) / 100);
 
     console.log('Odhad vysledku');
-    console.log(humanizePrediction(prediction, CANDIDATE_NAMES.FIRST_ROUND_2023).filter(x => ['Pavel', 'Babiš'].includes(x[0])));
+    console.log(humanizePrediction(prediction, CANDIDATE_NAMES.FIRST_ROUND_2023).filter(x => ['Pavel', 'Babiš', 'Neplatné hlasy'].includes(x[0])));
 };
 
 // TODO:
