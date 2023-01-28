@@ -5,6 +5,8 @@
   "main": "main.js",
   "type": "module",
   "dependencies": {
+    "adm-zip": "^0.5.10",
+    "cheerio": "^1.0.0-rc.12",
     "got": "^12.5.3",
     "lodash": "^4.17.21"
   },

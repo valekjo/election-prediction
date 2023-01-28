@@ -1,9 +1,8 @@
 import fs from 'fs';
 import util from 'util';
 
-
-const readFile = util.promisify(fs.readFile);
-const writeFile = util.promisify(fs.writeFile);
+export const readFile = util.promisify(fs.readFile);
+export const writeFile = util.promisify(fs.writeFile);
 
 const readCsvToJsonLines = async (filename) => {
     const data = await readFile(filename, 'utf-8');
@@ -25,6 +24,7 @@ const readCsvToJsonLines = async (filename) => {
     .filter(Boolean);
 };
 
+export const getSizeClass = (size) => Math.floor(size / 100);
 
 const transformUnit = (line, getVotes) => {
     const totalVoters = parseInt(line.VOL_SEZNAM);
@@ -37,9 +37,10 @@ const transformUnit = (line, getVotes) => {
         // Level of area
         l1: line.OKRES,
         l2: line.OBEC,
+        l3: line.OKRSEK,
         // Total number of voters
         totalVoters,
-        sizeClass: Math.floor(totalVoters / 20),
+        sizeClass: getSizeClass(totalVoters),
         // Total number of votes
         totalVotes,
         // Array of votes for candidates
@@ -60,12 +61,17 @@ export const meanSquareError = (a, b) => {
 
 // Get most similar unit from reference units
 const getBestMatchByErrorSize = (unit, referenceUnits) => {
-   return referenceUnits.map((u => ({
+   const bestMatch = referenceUnits.map((u => { 
+        // Add size anducast
+        const error = meanSquareError(unit.votesRatio.map(x => x * 200), u.votesRatio.map(x => x * 200));
+        return {
             unit: u, 
-            error: meanSquareError(unit.votesRatio, u.votesRatio)
-        })))
+            error,
+        }; }))
         .sort((a, b) => a.error - b.error)
-        [0].unit;
+        [0];
+    console.log(bestMatch.error);
+    return bestMatch.unit;
 }
 
 /**
@@ -91,6 +97,7 @@ const getBestMatch = (unit, referenceUnits) => {
     for(const filter of preferenceFilters) {
         const matchedUnits = referenceUnits.filter(filter);
         if (matchedUnits.length > 0) {
+            // console.log(matchedUnits.length);
             return getBestMatchByErrorSize(unit, matchedUnits);
         }
     }
@@ -241,7 +248,8 @@ export const CANDIDATE_NAMES = {
 export const humanizePrediction = (prediction, names) => {
     const result = [];
     for (let i = 0; i < prediction.votesRatio.length; i++) {
-        result.push([names[i], prediction.votesRatio[i]]);
+        const value = prediction.votesRatio[i];
+        result.push([names[i], Math.floor(value * 10000) / 100]);
     }
     return result.sort((a, b) => b[1] - a[1]);
 }
