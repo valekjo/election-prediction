@@ -139,15 +139,16 @@ const main = async() => {
         data
     );
 
-    console.log(meta);
-    console.log(humanizePrediction(prediction, CANDIDATE_NAMES.FIRST_ROUND_2023));
-
+    console.log(prediction);
     console.log('----------------------------------------------------');
-
 
     console.log('Zpracovano okrsku');
     console.log(Math.floor(meta.percentage * 10000) / 100);
-    console.log('Odhad');
+
+    console.log('Odhad ucasti');
+    console.log(Math.floor((prediction.totalVotes / prediction.totalVoters) * 10000) / 100);
+
+    console.log('Odhad vysledku');
     console.log(humanizePrediction(prediction, CANDIDATE_NAMES.FIRST_ROUND_2023).filter(x => ['Pavel', 'Babiš'].includes(x[0])));
 };
 
